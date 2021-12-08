@@ -10,7 +10,6 @@ import moe.zcstaff.tinyessentials.DimPos;
 import moe.zcstaff.tinyessentials.Lang;
 import moe.zcstaff.tinyessentials.Profile;
 import moe.zcstaff.tinyessentials.PlayerProfile;
-import moe.zcstaff.tinyessentials.Lang;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -20,14 +19,18 @@ public abstract class BasicCommand extends CommandBase {
   protected final List<String> aliases = new ArrayList<String>();
   protected final boolean allowConsole;
 
-  public BasicCommand(String name, Lang usage) {
-    this(name, usage, false);
+  public BasicCommand(String name, String usage, boolean allowConsole) {
+    this.name = name;
+    this.usage = usage;
+    this.allowConsole = allowConsole;
   }
 
   public BasicCommand(String name, Lang usage, boolean allowConsole) {
-    this.name = name;
-    this.usage = usage.text();
-    this.allowConsole = allowConsole;
+    this(name, usage.toText(), allowConsole);
+  }
+
+  public BasicCommand(String name, Lang usage) {
+    this(name, usage, false);
   }
   
   @Override
@@ -55,11 +58,13 @@ public abstract class BasicCommand extends CommandBase {
       PlayerProfile player = Profile.instance().getPlayer(entity);
       process(entity, player, argString);
     } else {
-      process(null, null, argString);
+      processConsole(sender, argString);
     }
   }
 
   public abstract void process(EntityPlayerMP entity, PlayerProfile player, String[] argString);
+
+  public void processConsole(ICommandSender sender, String[] argString) {}
 
   @Override
   public boolean canCommandSenderUseCommand(ICommandSender sender) {
@@ -93,5 +98,8 @@ public abstract class BasicCommand extends CommandBase {
     e.registerServerCommand(new SetHome());
     e.registerServerCommand(new DelHome());
     e.registerServerCommand(new Back());
+    e.registerServerCommand(new TPA());
+    e.registerServerCommand(new Suicide());
+    e.registerServerCommand(new Admin());
   }
 }

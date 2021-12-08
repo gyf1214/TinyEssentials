@@ -9,6 +9,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayerMP;
 
 import java.lang.Math;
+import java.util.List;
 
 public class DimUtil {
   public static String getDimName(int dim) {
@@ -57,10 +58,9 @@ public class DimUtil {
     for (Object o : list) {
       if (o instanceof EntityPlayerMP) {
         EntityPlayerMP player = (EntityPlayerMP)o;
-        System.out.println(player);
-        // if (player.getName() == name) {
-        //   return player;
-        // }
+        if (player.getGameProfile().getName().equals(name)) {
+          return player;
+        }
       }
     }
     return null;

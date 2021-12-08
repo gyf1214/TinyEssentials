@@ -17,19 +17,29 @@ public class Profile {
   private static Profile inst = null;
   private static final String configFile = "essentials.cfg";
   private static final String profile = "profile.dat";
+  private static final String backupFolder = "backup";
   
-  private File configDir;
-
+  public File rootDir;
+  public File configDir;
+  public File backupDir;
   public int homeLimit;
   public boolean enableHome;
   public boolean enableBack;
   public boolean enableTP;
+  public int maxBackup;
+  public int backupInterval;
+  public long lastBackup = -1;
   public Map<UUID, PlayerProfile> players = new HashMap<UUID, PlayerProfile>();
 
-  private Profile(File configDir) {
-    this.configDir = configDir;
+  private Profile(File dir) {
+    rootDir = dir.getParentFile();
+    configDir = new File(dir, TinyEssentials.MOD_ID);
     if (!configDir.exists()) {
       configDir.mkdirs();
+    }
+    backupDir = new File(configDir, backupFolder);
+    if (!backupDir.exists()) {
+      backupDir.mkdirs();
     }
     loadConfig();
   }
@@ -49,6 +59,8 @@ public class Profile {
     enableHome = config.get(Configuration.CATEGORY_GENERAL, "enable_home", true).getBoolean();
     enableBack = config.get(Configuration.CATEGORY_GENERAL, "enable_back", true).getBoolean();
     enableTP = config.get(Configuration.CATEGORY_GENERAL, "enable_tp", true).getBoolean();
+    maxBackup = config.get(Configuration.CATEGORY_GENERAL, "max_backup", 5).getInt();
+    backupInterval = config.get(Configuration.CATEGORY_GENERAL, "backup_interval", 0).getInt();
     config.save();
   }
 
@@ -79,6 +91,10 @@ public class Profile {
   }
 
   public void readFromNBT(NBTTagCompound tag) {
+    if (tag.hasKey("lastBackup") && tag.func_150299_b("lastBackup") == Constants.NBT.TAG_LONG) {
+      lastBackup = tag.getLong("lastBackup");
+    }
+
     players.clear();
     if (tag.hasKey("players") && tag.func_150299_b("players") == Constants.NBT.TAG_LIST) {
       NBTTagList list = tag.getTagList("players", Constants.NBT.TAG_COMPOUND);
@@ -93,6 +109,8 @@ public class Profile {
   }
 
   public void saveToNBT(NBTTagCompound tag) {
+    tag.setLong("lastBackup", lastBackup);
+
     NBTTagList list = new NBTTagList();
     for (Map.Entry<UUID, PlayerProfile> e : players.entrySet()) {
       PlayerProfile player = e.getValue();

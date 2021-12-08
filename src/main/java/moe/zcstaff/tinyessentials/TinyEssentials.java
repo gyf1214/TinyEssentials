@@ -20,7 +20,7 @@ public class TinyEssentials {
   @Mod.EventHandler
   public void preInit(FMLPreInitializationEvent e) {
     System.out.println("hello tinyessentials");
-    Profile.preInit(new File(e.getModConfigurationDirectory(), MOD_ID));
+    Profile.preInit(e.getModConfigurationDirectory());
 
     MinecraftForge.EVENT_BUS.register(new EventHandler());
     FMLCommonHandler.instance().bus().register(new EventHandler());

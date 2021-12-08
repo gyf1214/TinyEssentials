@@ -7,7 +7,7 @@ import moe.zcstaff.tinyessentials.DimUtil;
 
 public class TPA extends BasicCommand {
   public TPA() {
-    super("tpa", Lang.usageTPA);
+    super("tpa", Lang.usageTP);
   }
 
   @Override
@@ -22,6 +22,9 @@ public class TPA extends BasicCommand {
       Lang.errNoPlayer.sendToChat(entity, name);
       return;
     }
+    DimUtil.teleportEntity(entity, DimUtil.getEntityDimPos(target));
+    Lang.msgTP.sendToChat(entity, name);
+    Lang.msgTPNotify.sendToChat(target, player.name);
   }
 
   @Override
