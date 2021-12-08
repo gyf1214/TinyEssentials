@@ -23,7 +23,6 @@ public class Suicide extends BasicCommand {
     @Override
 		public IChatComponent func_151519_b(EntityLivingBase entity) {
       String name = "";
-      System.out.println(entity);
       if (entity instanceof EntityPlayerMP) {
         name = ((EntityPlayerMP)entity).getGameProfile().getName();
       }
