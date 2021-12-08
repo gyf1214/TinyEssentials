@@ -1,0 +1,92 @@
+def version_mod = '0.1.0';
+def version_mc = '1.7.10';
+def version_forge = '10.13.4.1614-1.7.10'
+
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            name = "forge"
+            url = "http://files.minecraftforge.net/maven"
+        }
+        maven {
+            name = "sonatype"
+            url = "https://oss.sonatype.org/content/repositories/snapshots/"
+        }
+    }
+    dependencies {
+        classpath 'net.minecraftforge.gradle:ForgeGradle:1.2-SNAPSHOT'
+    }
+}
+
+apply plugin: 'java'
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+apply plugin: 'forge'
+
+group = "moe.zcstaff"
+archivesBaseName = "TinyEssentials"
+
+minecraft {
+	version = version_mc + "-" + version_forge
+	runDir = "run"
+
+	replace "@VERSION@", version_mod
+}
+
+sourceSets {
+	main {
+		java {
+			srcDir "src/main/java"
+		}
+		resources {
+			srcDir "src/main/resources"
+		}
+	}
+}
+
+dependencies {
+}
+
+tasks.withType(Jar) {
+	destinationDir = file("Exported/")
+}
+
+processResources {
+	// this will ensure that this task is redone when the versions change.
+	inputs.property "version", project.version
+	inputs.property "mcversion", project.minecraft.version
+
+	// replace stuff in mcmod.info, nothing else
+	from(sourceSets.main.resources.srcDirs) {
+		include 'mcmod.info'
+
+		// replace version and mcversion
+		expand 'version':project.version, 'mcversion':project.minecraft.version
+	}
+
+	// copy everything else, thats not the mcmod.info
+	from(sourceSets.main.resources.srcDirs) {
+		exclude 'mcmod.info'
+	}
+}
+
+task sourceJar(type: Jar) {
+	from sourceSets.main.java
+	classifier = 'src'
+}
+
+task deobfJar(type: Jar) {
+	from sourceSets.main.output
+	classifier = 'dev'
+}
+
+task deploy (dependsOn: jar, type: Copy) {
+	from "Exported/" + archivesBaseName + ".jar"
+	into "../forge-server/mods"
+}
+
+build.dependsOn deobfJar
+build.dependsOn sourceJar
+build.dependsOn deploy

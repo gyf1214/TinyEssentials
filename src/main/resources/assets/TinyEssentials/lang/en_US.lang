@@ -1,0 +1,19 @@
+essentials.usage.home=/home <id> return to a specific home
+essentials.usage.sethome=/home <id> set home to current location
+essentials.usage.delhome=/home <id> delete specific home
+essentials.usage.back=/back teleport to last position
+essentials.usage.tp=/tpa <player> teleport to player
+
+essentials.msg.home=Teleport to home '%s'...
+essentials.msg.listhome=Available homes: %s
+essentials.msg.sethome=Home '%s' set to %s
+essentials.msg.delhome=Delete home '%s'
+essentials.msg.back=Teleport to previous position...
+essentials.msg.tp=Teleport to %s...
+essentials.msg.tpNotify=%s Teleports to you
+
+essentials.err.noHome=Home '%s' does not exist!
+essentials.err.homeExceed=You can only have %d home(s)!
+essentials.err.noBack=No previous position!
+essentials.err.missArg=Missing argument!
+essentials.err.noPlayer=No player named '%s'!
