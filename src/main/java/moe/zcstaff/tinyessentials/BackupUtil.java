@@ -26,6 +26,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 
 public class BackupUtil implements Runnable {
+  private AtomicBoolean isBackupFinished = new AtomicBoolean(false);
   private AtomicBoolean isBackuping = new AtomicBoolean(false);
   private long curBackup;
   private int maxBackup;
@@ -45,7 +46,7 @@ public class BackupUtil implements Runnable {
     return inst;
   }
 
-  public void setWorldSave(boolean disable) {
+  public void setWorldSaveDisabled(boolean disable) {
     MinecraftServer server = MinecraftServer.getServer();
     for (int i = 0; i < server.worldServers.length; i++) {
       WorldServer world = server.worldServers[i];
@@ -241,10 +242,6 @@ public class BackupUtil implements Runnable {
     boolean success = false;
 
     try {
-      setWorldSave(false);
-      forceWorldSave();
-      setWorldSave(true);
-
       Profile.instance().lastIncBackup = curBackup;
       if (!incremental) {
         Profile.instance().lastBackup = curBackup;
@@ -265,8 +262,6 @@ public class BackupUtil implements Runnable {
       success = true;
     } catch (Exception e) {
       e.printStackTrace();
-    } finally {
-      setWorldSave(false);
     }
 
     if (!success) {
@@ -282,6 +277,7 @@ public class BackupUtil implements Runnable {
     }
     
     isBackuping.set(false);
+    isBackupFinished.set(true);
   }
 
   public String getBackupPrefix() {
@@ -298,6 +294,7 @@ public class BackupUtil implements Runnable {
     backupDir = Profile.instance().backupDir;
     maxBackup = incremental ? Profile.instance().maxIncBackup : Profile.instance().maxBackup;
     backupFiles = Profile.instance().backupFiles;
+    setWorldSaveDisabled(true);
     zipFile = new File(backupDir, getBackupPrefix() + curBackup + ".zip");
     Thread th = new Thread(this, "Essential Backup");
     th.start();
@@ -318,6 +315,8 @@ public class BackupUtil implements Runnable {
       startBackup(newBackup, false);
     } else if (lastIncBackup > 0 && incInt > 0 && newBackup >= lastIncBackup + incInt) {
       startBackup(newBackup, true);
+    } else if (isBackupFinished.compareAndSet(true, false)) {
+      setWorldSaveDisabled(false);
     }
   }
 }
