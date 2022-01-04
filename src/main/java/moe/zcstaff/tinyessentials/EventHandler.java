@@ -14,8 +14,16 @@ public class EventHandler {
   @SubscribeEvent
   public void worldSaved(WorldEvent.Save e) {
     if(e.world.provider.dimensionId == 0 && e.world instanceof WorldServer) {
-      System.out.println("world saved");
+      // System.out.println("world saved");
       Profile.instance().saveProfile();
+    }
+  }
+
+  @SubscribeEvent
+  public void worldLoaded(WorldEvent.Load e) {
+    if (e.world.provider.dimensionId == 0 && e.world instanceof WorldServer) {
+      System.out.println("world loaded");
+      Profile.instance().loadProfile(e.world.getSaveHandler().getWorldDirectory());
     }
   }
 

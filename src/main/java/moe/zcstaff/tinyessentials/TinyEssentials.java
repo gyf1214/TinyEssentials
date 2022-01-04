@@ -31,10 +31,4 @@ public class TinyEssentials {
     System.out.println("server start");
     BasicCommand.registerCommands(e);
   }
-
-  @Mod.EventHandler
-  public void onServerAboutToStart(FMLServerAboutToStartEvent e) {
-    System.out.println("server about to start");
-    Profile.instance().loadProfile();
-  }
 }

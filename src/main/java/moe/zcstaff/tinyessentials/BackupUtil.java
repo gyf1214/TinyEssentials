@@ -15,6 +15,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Comparator;
@@ -30,6 +32,8 @@ public class BackupUtil implements Runnable {
   private File zipFile;
   private File rootDir;
   private File backupDir;
+  private Map<String, Long> backupFiles;
+  private boolean incremental;
 
   private static BackupUtil inst = new BackupUtil();
 
@@ -68,13 +72,90 @@ public class BackupUtil implements Runnable {
     }
   }
 
-  public ZipEntry getEntry(File file, boolean isFolder) {
+  public String getEntryName(File file, boolean isFolder) {
     String name = rootDir.toPath().relativize(file.toPath()).toString();
     name = isFolder ? name + "/" : name;
-    return new ZipEntry(name);
+    return name;
   }
 
-  public void addTree(File file, ZipOutputStream zos) throws IOException {
+  private interface ITreeProcessor {
+    public boolean processDir(File file) throws IOException;
+    public void processFile(File file) throws IOException;
+  }
+
+  private class ZipTreeProcesser implements ITreeProcessor {
+    private ZipOutputStream zos;
+    private Map<String, Long> fileMap;
+
+    public ZipTreeProcesser(ZipOutputStream zos) {
+      this(zos, new HashMap<String, Long>());
+    }
+
+    public ZipTreeProcesser(ZipOutputStream zos, Map<String, Long> files) {
+      this.zos = zos;
+      fileMap = files;
+    }
+
+    public void writeFile(File file) throws IOException, ZipException {
+      BufferedInputStream fin = new BufferedInputStream(new FileInputStream(file));
+      try {
+        byte[] buf = new byte[4096];
+        int length = fin.read(buf);
+        while (length >= 0) {
+          zos.write(buf, 0, length);
+          length = fin.read(buf);
+        }
+      } finally {
+        fin.close();
+      }
+    }
+
+    @Override
+    public boolean processDir(File file) throws IOException {
+      try {
+        zos.putNextEntry(new ZipEntry(getEntryName(file, true)));
+        return true;
+      } catch (ZipException e) {
+        System.out.println("ignore zip error " + e);
+      }
+      return false;
+    }
+
+    @Override
+    public void processFile(File file) throws IOException {
+      String name = getEntryName(file, false);
+      if (incremental && backupFiles.containsKey(name) && backupFiles.get(name) >= file.lastModified()) {
+        return;
+      }
+      try {
+        zos.putNextEntry(new ZipEntry(name));
+        writeFile(file);
+      } catch (ZipException e) {
+        System.out.println("ignore zip error " + e);
+      }
+    }
+  }
+
+  private class TimeTreeProcessor implements ITreeProcessor {
+    private Map<String, Long> fileMap;
+
+    public TimeTreeProcessor(Map<String, Long> files) {
+      fileMap = files;
+    }
+
+    @Override
+    public boolean processDir(File file) {
+      return true;
+    }
+
+    @Override
+    public void processFile(File file) {
+      String entry = getEntryName(file, false);
+      fileMap.put(entry, file.lastModified());
+    }
+  }
+
+  public void addTree(File file, ITreeProcessor processor) throws IOException {
     if (file.equals(backupDir)) {
       return;
     }
@@ -83,34 +164,20 @@ public class BackupUtil implements Runnable {
         return;
       }
     }
-    try {
-      if (file.isDirectory()) {
-        if (!file.equals(rootDir)) {
-          zos.putNextEntry(getEntry(file, true));
-        }
+    if (file.isDirectory()) {
+      boolean step = true;
+      if (!file.equals(rootDir)) {
+        step = processor.processDir(file);
+      }
 
+      if (step) {
         File[] subs = file.listFiles();
         for (int i = 0; i < subs.length; i++) {
-          addTree(subs[i], zos);
+          addTree(subs[i], processor);
         }
-      } else if (file.isFile()) {
-        zos.putNextEntry(getEntry(file, false));
-
-        BufferedInputStream fin = new BufferedInputStream(new FileInputStream(file));
-        try {
-          byte[] buf = new byte[1024];
-          int length = fin.read(buf);
-          while (length >= 0) {
-            zos.write(buf, 0, length);
-            length = fin.read(buf);
-          }
-        } finally {
-          fin.close();
-        }
-        
       }
-    } catch (ZipException e) {
-      System.out.println("ignore zip error " + e);
+    } else if (file.isFile()) {
+      processor.processFile(file);
     }
   }
 
@@ -130,13 +197,14 @@ public class BackupUtil implements Runnable {
   }
 
   public void purgeOldBackups() {
+    String prefix = getBackupPrefix();
     File[] files = backupDir.listFiles();
     List<BackupEntry> backups = new ArrayList<BackupEntry>();
     for (int i = 0; i < files.length; i++) {
       File f = files[i];
       String name = f.getName();
-      if (name.startsWith("backup-") && name.endsWith(".zip")) {
-        name = name.substring(7, name.length() - 4);
+      if (name.startsWith(prefix) && name.endsWith(".zip")) {
+        name = name.substring(prefix.length(), name.length() - 4);
       } else {
         continue;
       }
@@ -165,41 +233,72 @@ public class BackupUtil implements Runnable {
 
   @Override
   public void run() {
-    System.out.println("start backup " + curBackup);
+    System.out.println("start " + getBackupPrefix() + curBackup);
+
+    long lastIncBackup = Profile.instance().lastIncBackup;
+    long lastBackup = Profile.instance().lastBackup;
+    Map<String, Long> backupFilesOld = incremental ? null : new HashMap<String, Long>(backupFiles);
+    boolean success = false;
 
     try {
       setWorldSave(false);
       forceWorldSave();
       setWorldSave(true);
+
+      Profile.instance().lastIncBackup = curBackup;
+      if (!incremental) {
+        Profile.instance().lastBackup = curBackup;
+        backupFiles.clear();
+        addTree(rootDir, new TimeTreeProcessor(backupFiles));
+      }
+      Profile.instance().saveProfile();
+
       ZipOutputStream zos = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFile)));
       try {
-        addTree(rootDir, zos);
+        addTree(rootDir, new ZipTreeProcesser(zos));
       } catch (Exception e) {
         e.printStackTrace();
       } finally {
         zos.close();
       }
       purgeOldBackups();
+      success = true;
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
       setWorldSave(false);
     }
+
+    if (!success) {
+      Profile.instance().lastIncBackup = lastIncBackup;
+      if (!incremental) {
+        Profile.instance().lastBackup = lastBackup;
+        backupFiles.clear();
+        backupFiles.putAll(backupFilesOld);
+      }
+      System.out.println("backup failed");
+    } else {
+      System.out.println("backup suceeded");
+    }
     
-    Profile.instance().lastBackup = curBackup;
     isBackuping.set(false);
-    System.out.println("finish backup");
   }
 
-  public boolean startBackup(long backup) {
+  public String getBackupPrefix() {
+    return incremental ? "inc-backup-" : "backup-";
+  }
+
+  public boolean startBackup(long backup, boolean inc) {
     if (!isBackuping.compareAndSet(false, true)) {
       return false;
     }
     curBackup = backup;
+    incremental = inc;
     rootDir = Profile.instance().rootDir;
     backupDir = Profile.instance().backupDir;
-    maxBackup = Profile.instance().maxBackup;
-    zipFile = new File(backupDir, "backup-" + curBackup + ".zip");
+    maxBackup = incremental ? Profile.instance().maxIncBackup : Profile.instance().maxBackup;
+    backupFiles = Profile.instance().backupFiles;
+    zipFile = new File(backupDir, getBackupPrefix() + curBackup + ".zip");
     Thread th = new Thread(this, "Essential Backup");
     th.start();
     return true;
@@ -212,9 +311,13 @@ public class BackupUtil implements Runnable {
   public void checkBackup() {
     long newBackup = getNewBackup();
     long lastBackup = Profile.instance().lastBackup;
+    long lastIncBackup = Profile.instance().lastIncBackup;
     int interval = Profile.instance().backupInterval;
-    if (lastBackup > 0 && interval > 0 && newBackup > lastBackup + interval) {
-      startBackup(newBackup);
+    int incInt = Profile.instance().incBackupInterval;
+    if (lastBackup > 0 && interval > 0 && newBackup >= lastBackup + interval) {
+      startBackup(newBackup, false);
+    } else if (lastIncBackup > 0 && incInt > 0 && newBackup >= lastIncBackup + incInt) {
+      startBackup(newBackup, true);
     }
   }
 }

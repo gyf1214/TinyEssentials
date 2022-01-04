@@ -26,9 +26,9 @@ public class Admin extends BasicCommand {
     if (argString[0].equals("reload")) {
       Profile.instance().loadConfig();
       Lang.msgReload.sendToChat(sender);
-    } else if (argString[0].equals("backup")) {
+    } else if (argString[0].equals("backup") || argString[0].equals("incBackup")) {
       long newBackup = BackupUtil.getNewBackup();
-      if (!BackupUtil.instance().startBackup(newBackup)) {
+      if (!BackupUtil.instance().startBackup(newBackup, argString[0].equals("incBackup"))) {
         Lang.errHasBackup.sendToChat(sender);
       }
     } else {
