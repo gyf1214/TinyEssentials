@@ -34,8 +34,8 @@ public class DimUtil {
     }
     
     int from = entity.dimension;
-		float rotationYaw = entity.rotationYaw;
-		float rotationPitch = entity.rotationPitch;
+    float rotationYaw = entity.rotationYaw;
+    float rotationPitch = entity.rotationPitch;
 
     MinecraftServer server = MinecraftServer.getServer();
     WorldServer toDim = server.worldServerForDimension(dim);
@@ -46,8 +46,8 @@ public class DimUtil {
     }
     
     entity.fallDistance = 0;
-		entity.rotationYaw = rotationYaw;
-		entity.rotationPitch = rotationPitch;
+    entity.rotationYaw = rotationYaw;
+    entity.rotationPitch = rotationPitch;
     entity.setPositionAndUpdate(x, y, z);
 
     return true;
@@ -67,31 +67,31 @@ public class DimUtil {
   }
 
   private static class TeleporterStub extends Teleporter {
-		public TeleporterStub(WorldServer w) {
+    public TeleporterStub(WorldServer w) {
       super(w);
     }
-		
-		@Override
-		public boolean makePortal(Entity e) {
+    
+    @Override
+    public boolean makePortal(Entity e) {
       return true;
     }
-		
-		@Override
-		public boolean placeInExistingPortal(Entity e, double x, double y, double z, float f) {
+    
+    @Override
+    public boolean placeInExistingPortal(Entity e, double x, double y, double z, float f) {
       return true;
     }
-		
-		@Override
-		public void placeInPortal(Entity entity, double x, double y, double z, float f) {
-			entity.setLocationAndAngles(x, y, z, entity.rotationPitch, entity.rotationYaw);
-			entity.motionX = 0D;
-			entity.motionY = 0D;
-			entity.motionZ = 0D;
-			entity.fallDistance = 0F;
-		}
-		
-		@Override
-		public void removeStalePortalLocations(long l) {
-		}
-	}
+    
+    @Override
+    public void placeInPortal(Entity entity, double x, double y, double z, float f) {
+      entity.setLocationAndAngles(x, y, z, entity.rotationPitch, entity.rotationYaw);
+      entity.motionX = 0D;
+      entity.motionY = 0D;
+      entity.motionZ = 0D;
+      entity.fallDistance = 0F;
+    }
+    
+    @Override
+    public void removeStalePortalLocations(long l) {
+    }
+  }
 }

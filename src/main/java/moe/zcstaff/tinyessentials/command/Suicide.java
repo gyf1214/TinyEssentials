@@ -14,20 +14,20 @@ public class Suicide extends BasicCommand {
 
   private static class SuicideDamageSource extends DamageSource {
     public SuicideDamageSource() {
-			super("suicide");
-			setDamageBypassesArmor();
-			setDamageAllowedInCreativeMode();
+      super("suicide");
+      setDamageBypassesArmor();
+      setDamageAllowedInCreativeMode();
       setDamageIsAbsolute();
-		}
+    }
 
     @Override
-		public IChatComponent func_151519_b(EntityLivingBase entity) {
+    public IChatComponent func_151519_b(EntityLivingBase entity) {
       String name = "";
       if (entity instanceof EntityPlayerMP) {
         name = ((EntityPlayerMP)entity).getGameProfile().getName();
       }
       return Lang.msgSuicide.toChat(name);
-		}
+    }
   }
 
   private final DamageSource suicideDamage = new SuicideDamageSource();

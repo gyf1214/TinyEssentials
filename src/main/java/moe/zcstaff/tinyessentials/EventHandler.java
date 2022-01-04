@@ -36,7 +36,7 @@ public class EventHandler {
   }
 
   @SubscribeEvent
-	public void playerDeath(LivingDeathEvent e) {
+  public void playerDeath(LivingDeathEvent e) {
     if (e.entity instanceof EntityPlayerMP) {
       PlayerProfile p = Profile.instance().getPlayer((EntityPlayerMP) e.entity);
       p.lastPos = DimUtil.getEntityDimPos(e.entity);
