@@ -46,6 +46,8 @@ public final class Lang {
   public static Lang msgTPNotify   = get("msg.tpNotify");
   public static Lang msgSuicide    = get("msg.suicide");
   public static Lang msgReload     = get("msg.reload");
+  public static Lang msgEnableAuto = get("msg.enableAuto");
+  public static Lang msgDisableAuto= get("msg.disableAuto");
 
   public static Lang errNoHome     = get("err.noHome");
   public static Lang errHomeExceed = get("err.homeExceed");

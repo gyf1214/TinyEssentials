@@ -31,6 +31,12 @@ public class Admin extends BasicCommand {
       if (!BackupUtil.instance().startBackup(newBackup, argString[0].equals("incBackup"))) {
         Lang.errHasBackup.sendToChat(sender);
       }
+    } else if (argString[0].equals("enableAuto")) {
+      BackupUtil.instance().setAuto(true);
+      Lang.msgEnableAuto.sendToChat(sender);
+    } else if (argString[0].equals("disableAuto")) {
+      BackupUtil.instance().setAuto(false);
+      Lang.msgDisableAuto.sendToChat(sender);
     } else {
       Lang.errMissArg.sendToChat(sender);
     }

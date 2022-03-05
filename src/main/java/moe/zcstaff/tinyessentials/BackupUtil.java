@@ -28,6 +28,7 @@ import java.util.zip.ZipException;
 public class BackupUtil implements Runnable {
   private AtomicBoolean isBackupFinished = new AtomicBoolean(false);
   private AtomicBoolean isBackuping = new AtomicBoolean(false);
+  private boolean isAuto = false;
   private long curBackup;
   private int maxBackup;
   private File zipFile;
@@ -311,12 +312,16 @@ public class BackupUtil implements Runnable {
     long lastIncBackup = Profile.instance().lastIncBackup;
     int interval = Profile.instance().backupInterval;
     int incInt = Profile.instance().incBackupInterval;
-    if (lastBackup > 0 && interval > 0 && newBackup >= lastBackup + interval) {
+    if (isAuto && lastBackup > 0 && interval > 0 && newBackup >= lastBackup + interval) {
       startBackup(newBackup, false);
-    } else if (lastIncBackup > 0 && incInt > 0 && newBackup >= lastIncBackup + incInt) {
+    } else if (isAuto && lastIncBackup > 0 && incInt > 0 && newBackup >= lastIncBackup + incInt) {
       startBackup(newBackup, true);
     } else if (isBackupFinished.compareAndSet(true, false)) {
       setWorldSaveDisabled(false);
     }
+  }
+
+  public void setAuto(boolean tf) {
+    isAuto = tf;
   }
 }
